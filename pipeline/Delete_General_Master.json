@@ -1,0 +1,121 @@
+{
+	"name": "Delete_General_Master",
+	"properties": {
+		"activities": [
+			{
+				"name": "If Compressed",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or(equals(pipeline().parameters.Compressed,'1')\n,equals(pipeline().parameters.FileSystem,'orion' )\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Delete",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"wildcardFileName": {
+										"value": "@{concat('*',formatDateTime(pipeline().parameters.FileDate,'yyyyMMdd'),'*')}",
+										"type": "Expression"
+									},
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "If Assetmark",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "If Compressed",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.Compressed,'1')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "DeletePGPFile",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"wildcardFileName": {
+										"value": "@{concat('*',formatDateTime(pipeline().parameters.FileDate,'yyyyMMdd'),'*')}",
+										"type": "Expression"
+									},
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"FileDate": {
+				"type": "string"
+			},
+			"MasterPipelineId": {
+				"type": "string"
+			},
+			"FileSystem": {
+				"type": "string"
+			},
+			"InputFilesLocation": {
+				"type": "string"
+			},
+			"DelimeterInput": {
+				"type": "string"
+			},
+			"Source_Location": {
+				"type": "array"
+			},
+			"Compressed": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "shared/Generalized_Master_Pipeline"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-25T05:36:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
