@@ -1,0 +1,75 @@
+{
+	"name": "Master_Email_Notification",
+	"properties": {
+		"activities": [
+			{
+				"name": "Trigger Logic App",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@if(equals(pipeline().globalParameters.ADFName,'nonprod'), 'https://prod-10.eastus2.logic.azure.com:443/workflows/eddb83057dfc488d8633d9c15aa72362/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=nM-jEx1GxpVPK75g0H0FNJJTFLYONteAThM6cCOehGw','https://prod-27.eastus2.logic.azure.com:443/workflows/d993f3b4aad74a96a31a6d88431294ff/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=DbROSEHScEgWReqNRySwCNjScFDZcrfzEy9zlSQ8yqk')",
+						"type": "Expression"
+					},
+					"method": "POST",
+					"body": {
+						"value": "@concat('{\"Attempts\":\"',pipeline().parameters.Attempts,'\",\n\"fileDate\":\"',pipeline().parameters.file_date,'\",\n\"masterpipelineid\":\"', pipeline().parameters.MasterPipelineId,'\",\n\"sourceName\": \"' ,pipeline().parameters.SourceName,'\",\"WAFirst\":\"', pipeline().parameters.WAFirst_dependent_Pipelines,'\",\n\"WASecond\": \"' ,pipeline().parameters.WASecond_dependent_Pipeline,'\",\n\"RiskAlyzeFirst\":\"', pipeline().parameters.RiskAlyzeFirst_dependent_Pipelines,'\",\n\"RiskAlyzeSecond\": \"' ,pipeline().parameters.RiskAlyzeSecond_dependent_Pipeline,'\",\n\"MorningFirst\":\"', pipeline().parameters.MorningFirst_dependent_Pipelines,'\",\n\"MorningSecond\": \"' ,pipeline().parameters.MorningSecond_dependent_Pipeline,'\",\"WA_MS_RA_Flag\":\"',pipeline().parameters.WA_MS_RA_Flag,'\",\n\"orionfileDate\": \"' ,pipeline().parameters.OrionFileDate,'\"}')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"SourceName": {
+				"type": "string"
+			},
+			"MasterPipelineId": {
+				"type": "string"
+			},
+			"file_date": {
+				"type": "string"
+			},
+			"Attempts": {
+				"type": "string"
+			},
+			"WAFirst_dependent_Pipelines": {
+				"type": "string"
+			},
+			"WASecond_dependent_Pipeline": {
+				"type": "string"
+			},
+			"MorningFirst_dependent_Pipelines": {
+				"type": "string"
+			},
+			"MorningSecond_dependent_Pipeline": {
+				"type": "string"
+			},
+			"RiskAlyzeFirst_dependent_Pipelines": {
+				"type": "string"
+			},
+			"RiskAlyzeSecond_dependent_Pipeline": {
+				"type": "string"
+			},
+			"WA_MS_RA_Flag": {
+				"type": "string"
+			},
+			"OrionFileDate": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "shared/Email_Notifications"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-23T18:02:01Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
