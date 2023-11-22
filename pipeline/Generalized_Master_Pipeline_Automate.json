@@ -1,0 +1,1177 @@
+{
+	"name": "Generalized_Master_Pipeline_Automate",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set PreEndTime",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "If get files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "PreEndTime",
+					"value": {
+						"value": "@utcNow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set ProcEndTime_copy1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Master Pipeline Switch",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "ProcEndTime",
+					"value": {
+						"value": "@utcNow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Hot Storage",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set ProcEndTime_copy1",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"FileSystemInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['Source']",
+							"type": "Expression"
+						},
+						"StorageAccountInput": {
+							"value": "@concat('stmerit',pipeline().globalParameters.ADFName)",
+							"type": "Expression"
+						},
+						"FolderPathInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['FolderPathInput']",
+							"type": "Expression"
+						},
+						"FilesNameInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['FilesNameInput']",
+							"type": "Expression"
+						},
+						"DelimeterInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['DelimeterInput']",
+							"type": "Expression"
+						},
+						"HotFileSystemOutput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['Source']",
+							"type": "Expression"
+						},
+						"HotStorageAccountOutput": {
+							"value": "@concat('stmerit',pipeline().globalParameters.ADFName)",
+							"type": "Expression"
+						},
+						"HotFolderPathOutput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['HotFolderPathOutput']",
+							"type": "Expression"
+						},
+						"FilesNameOutput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['FilesNameOutput']",
+							"type": "Expression"
+						},
+						"FileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Outputdelimeter": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['DelimeterInput']",
+							"type": "Expression"
+						},
+						"PartialPath": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['PartialPath']",
+							"type": "Expression"
+						},
+						"Source": {
+							"value": "@pipeline().parameters.Source_Details['Source']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Email_Notification",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Pre-Processing Merit Auditing",
+						"dependencyConditions": [
+							"Skipped",
+							"Completed"
+						]
+					},
+					{
+						"activity": "Processing Merit Auditing",
+						"dependencyConditions": [
+							"Skipped",
+							"Completed"
+						]
+					},
+					{
+						"activity": "Post-Processing Merit Auditing",
+						"dependencyConditions": [
+							"Skipped",
+							"Completed"
+						]
+					},
+					{
+						"activity": "FileNotFound Merit Auditing",
+						"dependencyConditions": [
+							"Skipped",
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Master_Email_Notification",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceName": {
+							"value": "@toUpper(pipeline().parameters.Source_Details['Source'])",
+							"type": "Expression"
+						},
+						"MasterPipelineId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"file_date": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Attempts": {
+							"value": "@add(int(variables('Count')),1)",
+							"type": "Expression"
+						},
+						"WAFirst_dependent_Pipelines": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['WAFirst_dependent']",
+							"type": "Expression"
+						},
+						"WASecond_dependent_Pipeline": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['WASecond']",
+							"type": "Expression"
+						},
+						"MorningFirst_dependent_Pipelines": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['MorningFirst']",
+							"type": "Expression"
+						},
+						"MorningSecond_dependent_Pipeline": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['MorningSecond']",
+							"type": "Expression"
+						},
+						"RiskAlyzeFirst_dependent_Pipelines": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['RiskAlyzeFirst']",
+							"type": "Expression"
+						},
+						"RiskAlyzeSecond_dependent_Pipeline": {
+							"value": "@pipeline().parameters.WA_MS_RS[0]['RiskalyzeSecond']",
+							"type": "Expression"
+						},
+						"WA_MS_RA_Flag": {
+							"value": "@pipeline().parameters.WA_MS_RA_Flag",
+							"type": "Expression"
+						},
+						"OrionFileDate": {
+							"value": "@formatDateTime(addDays(formatDateTime(variables('FileDate'),'MM-dd-yyyy'),1),'MM-dd-yyyy')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ArivalTime",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set ProcEndTime_copy1",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"FileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"MasterPipelineId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"FileSystem": {
+							"value": "@pipeline().parameters.Source_Details['Source']",
+							"type": "Expression"
+						},
+						"InputFilesLocation": {
+							"value": "@pipeline().parameters.InputFiles_processFiles_Location[0]['Inputfileslocation']",
+							"type": "Expression"
+						},
+						"DelimeterInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['DelimeterInput']",
+							"type": "Expression"
+						},
+						"Source_Location": {
+							"value": "@pipeline().parameters.Source_Location",
+							"type": "Expression"
+						},
+						"Compressed": {
+							"value": "@pipeline().parameters.Source_Details['Compressed']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Until1",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "File Date",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or(equals(int(variables('Count')),int(variables('MaxRetry'))),equals(variables('FileStatus'),'PASS'))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Get_Text_File_Location",
+							"type": "GetMetadata",
+							"dependsOn": [
+								{
+									"activity": "If Compressed",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 1,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"fieldList": [
+									"childItems"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							}
+						},
+						{
+							"name": "Filter_Text_Files",
+							"type": "Filter",
+							"dependsOn": [
+								{
+									"activity": "Get_Text_File_Location",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"items": {
+									"value": "@activity('Get_Text_File_Location').output.childItems",
+									"type": "Expression"
+								},
+								"condition": {
+									"value": "@or(contains(item().name,\n     formatDateTime(variables('FileDate'),'yyyyMMdd')\n    ),\n    and(contains(item().name,\n        formatDateTime(variables('FileDate'),'MMddyy')),\n        not(contains(item().name,'_CGF_'))\n      )\n)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Check if get files",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Filter_Text_Files",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greaterOrEquals(activity('Filter_Text_Files').output.FilteredItemsCount, int(pipeline().parameters.Source_Details['Check_File']) )",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Increase ProcessCount",
+										"type": "SetVariable",
+										"dependsOn": [],
+										"policy": {
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "ProcessCount",
+											"value": {
+												"value": "@string(add(int(variables('Count')),1))",
+												"type": "Expression"
+											}
+										}
+									},
+									{
+										"name": "Count_equal_ProcessCount",
+										"type": "SetVariable",
+										"dependsOn": [
+											{
+												"activity": "Increase ProcessCount",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "Count",
+											"value": {
+												"value": "@variables('ProcessCount')",
+												"type": "Expression"
+											}
+										}
+									},
+									{
+										"name": "Wait1",
+										"type": "Wait",
+										"dependsOn": [
+											{
+												"activity": "Count_equal_ProcessCount",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"userProperties": [],
+										"typeProperties": {
+											"waitTimeInSeconds": {
+												"value": "@if(equals(variables('Count'),variables('MaxRetry')),1,900)",
+												"type": "Expression"
+											}
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "Set variable2",
+										"type": "SetVariable",
+										"dependsOn": [],
+										"policy": {
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "FileStatus",
+											"value": "PASS"
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "If Prod",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "If Compressed",
+									"dependencyConditions": [
+										"Skipped"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(pipeline().globalParameters.ADFName,'prod')",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "File Move Prod to Non Prod",
+										"type": "ExecutePipeline",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"waitOnCompletion": true,
+											"parameters": {
+												"FileSystem": {
+													"value": "@pipeline().parameters.Source_Details['Source']",
+													"type": "Expression"
+												},
+												"FolderPath": {
+													"value": "@pipeline().parameters.InputFiles_processFiles_Location[0]['Inputfileslocation']",
+													"type": "Expression"
+												},
+												"FileDate": {
+													"value": "@variables('FileDate')",
+													"type": "Expression"
+												}
+											}
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "If Compressed",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Switch1",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(pipeline().parameters.Source_Details['Compressed'],'1')",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Copy Compress data",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"modifiedDatetimeStart": {
+														"value": "@formatDateTime(utcNow(),'MM-dd-yyyy')",
+														"type": "Expression"
+													},
+													"wildcardFileName": {
+														"value": "*",
+														"type": "Expression"
+													},
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings",
+													"compressionProperties": {
+														"type": "ZipDeflateReadSettings",
+														"preserveZipFileNameAsFolder": false
+													}
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".tsv"
+												}
+											},
+											"enableStaging": false
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "Switch1",
+							"type": "Switch",
+							"dependsOn": [
+								{
+									"activity": "If Condition1",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"on": {
+									"value": "@pipeline().parameters.Source_Location[0]['Location']",
+									"type": "Expression"
+								},
+								"cases": [
+									{
+										"value": "SFTP",
+										"activities": [
+											{
+												"name": "SFTP to ADLS",
+												"description": "Copy new and changed files only by using LastModifiedDate",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "BinarySource",
+														"storeSettings": {
+															"type": "SftpReadSettings",
+															"maxConcurrentConnections": 1,
+															"recursive": false,
+															"modifiedDatetimeStart": {
+																"value": "@formatDateTime(utcNow(),'MM-dd-yyyy')",
+																"type": "Expression"
+															},
+															"deleteFilesAfterCompletion": false,
+															"disableChunking": false
+														},
+														"formatSettings": {
+															"type": "BinaryReadSettings"
+														}
+													},
+													"sink": {
+														"type": "BinarySink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"dataIntegrationUnits": 2
+												}
+											}
+										]
+									}
+								]
+							}
+						},
+						{
+							"name": "If Condition1",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@or(equals(pipeline().parameters.Source_Details['Source'],'sei'),\nequals(pipeline().parameters.Source_Details['Source'],'emoney'))",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Copy Files",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "DelimitedTextSource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": false,
+													"wildcardFileName": {
+														"value": "@{concat('*',formatDateTime(variables('FileDate'),'yyyyMMdd'),'*')}",
+														"type": "Expression"
+													},
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "DelimitedTextReadSettings"
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false
+										}
+									}
+								]
+							}
+						}
+					],
+					"timeout": "0.12:00:00"
+				}
+			},
+			{
+				"name": "If get files",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Until1",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(variables('FileStatus'), 'PASS')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Fail2",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "Files Not Found",
+								"errorCode": "500"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Pre-Processing Merit Auditing",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set PreEndTime",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"Endtime": {
+							"value": "@formatDateTime(variables('PreEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')",
+							"type": "Expression"
+						},
+						"executiontimeinsec": {
+							"value": "@string(div(sub(ticks(formatDateTime(variables('PreEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')),ticks(pipeline().TriggerTime)),10000000))",
+							"type": "Expression"
+						},
+						"MasterPipelineID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"pipelineid": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Preprocessing')",
+							"type": "Expression"
+						},
+						"PipelineName": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Preprocessing')",
+							"type": "Expression"
+						},
+						"PipelineStatusRun": {
+							"value": "@activity('Get_Text_File_Location')?.status",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"sourceFileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Starttime": {
+							"value": "@pipeline().TriggerTime",
+							"type": "Expression"
+						},
+						"ErrorMessage": {
+							"value": "@if(equals(activity('File Move Prod to Non Prod')?.status,'Failed'),activity('File Move Prod to Non Prod')?.error?.message,'No Error')",
+							"type": "Expression"
+						},
+						"TrigggerType": {
+							"value": "@pipeline().parameters.Source_Details['TriggerType']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Processing Merit Auditing",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set ProcEndTime_copy1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"Endtime": {
+							"value": "@formatDateTime(variables('ProcEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')",
+							"type": "Expression"
+						},
+						"executiontimeinsec": {
+							"value": "@string(div(sub(ticks(formatDateTime(variables('ProcEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')),ticks(formatDateTime(variables('PreEndTime'), 'yyyy-MM-dd HH:mm:ss.fff'))),10000000))",
+							"type": "Expression"
+						},
+						"MasterPipelineID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"pipelineid": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Processing')",
+							"type": "Expression"
+						},
+						"PipelineName": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Processing')",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"sourceFileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Starttime": {
+							"value": "@formatDateTime(variables('PreEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')",
+							"type": "Expression"
+						},
+						"ErrorMessage": "No Error",
+						"TrigggerType": {
+							"value": "@pipeline().parameters.Source_Details['TriggerType']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Post-Processing Merit Auditing",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Delete Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"Endtime": {
+							"value": "@utcNow()",
+							"type": "Expression"
+						},
+						"executiontimeinsec": {
+							"value": "@string(div(sub(ticks(utcNow()),ticks(formatDateTime(variables('ProcEndTime'), 'yyyy-MM-dd HH:mm:ss.fff'))),10000000))",
+							"type": "Expression"
+						},
+						"MasterPipelineID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"pipelineid": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_PostProcessing')",
+							"type": "Expression"
+						},
+						"PipelineName": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_PostProcessing')",
+							"type": "Expression"
+						},
+						"PipelineStatusRun": {
+							"value": "@if(equals(activity('Hot Storage')?.status,'Failed'),\n        'Hot_Storage_Failed',\n         if(equals(activity('Delete Files')?.status,'Failed'),\n                'Delete_Files_Failed',\n                if(equals(activity('ArivalTime')?.status,'Failed'),\n                'ArrivalTime_Failed',\n                activity('Hot Storage')?.status\n                  )\n            )\n)",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"sourceFileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Starttime": {
+							"value": "@formatDateTime(variables('ProcEndTime'), 'yyyy-MM-dd HH:mm:ss.fff')",
+							"type": "Expression"
+						},
+						"ErrorMessage": {
+							"value": "@if(equals(activity('Hot Storage')?.status,'Failed'),activity('Hot Storage')?.error?.message,if(equals(activity('ArivalTime')?.status,'Failed'),activity('ArivalTime')?.error?.message,'No Error'))",
+							"type": "Expression"
+						},
+						"TrigggerType": {
+							"value": "@pipeline().parameters.Source_Details['TriggerType']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "FileNotFound Merit Auditing",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "If get files",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"Endtime": {
+							"value": "@utcNow()",
+							"type": "Expression"
+						},
+						"executiontimeinsec": {
+							"value": "@string(div(sub(ticks(utcNow()),ticks(pipeline().TriggerTime)),10000000))",
+							"type": "Expression"
+						},
+						"MasterPipelineID": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"pipelineid": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Preprocessing')",
+							"type": "Expression"
+						},
+						"PipelineName": {
+							"value": "@concat('Pipeline_',pipeline().parameters.Source_Details['Source'],'_Preprocessing')",
+							"type": "Expression"
+						},
+						"PipelineStatusRun": {
+							"value": "@if(equals(activity('File Move Prod to Non Prod')?.status,'Failed'),'SEI_PreProcessing_Failed','All_Files_Not_Found')",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"sourceFileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"Starttime": {
+							"value": "@pipeline().TriggerTime",
+							"type": "Expression"
+						},
+						"ErrorMessage": {
+							"value": "@if(equals(activity('File Move Prod to Non Prod')?.status,'Failed'),activity('File Move Prod to Non Prod')?.error?.message,'No Error')",
+							"type": "Expression"
+						},
+						"TrigggerType": {
+							"value": "@pipeline().parameters.Source_Details['TriggerType']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "File Date",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "FileDate",
+					"value": {
+						"value": "@if(equals(length(pipeline().parameters.ManulFileDate),10),\npipeline().parameters.ManulFileDate,\nif(or(equals(pipeline().parameters.Source_Details['Source'],'orion'),equals(pipeline().parameters.Source_Details['Source'],'emoney')),\nformatDateTime(string(utcNow('d')),'MM-dd-yyyy'),\nformatDateTime(addDays(utcNow('d'), -1),'MM-dd-yyyy'))\n)\n",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Master Pipeline Switch",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set PreEndTime",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Execute Pipeline Processing",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"pipeline_name": {
+							"value": "@pipeline().parameters.Processing_Pipeline_name[0]['Pipeline_name']",
+							"type": "Expression"
+						},
+						"MasterPipelineId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"FileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"FullFileClient": {
+							"value": "@pipeline().parameters.Source_Details['FullFilesClient']",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Delete Files",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Hot Storage",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ArivalTime",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"FileDate": {
+							"value": "@variables('FileDate')",
+							"type": "Expression"
+						},
+						"MasterPipelineId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"FileSystem": {
+							"value": "@pipeline().parameters.Source_Details['Source']",
+							"type": "Expression"
+						},
+						"InputFilesLocation": {
+							"value": "@pipeline().parameters.InputFiles_processFiles_Location[0]['Inputfileslocation']",
+							"type": "Expression"
+						},
+						"DelimeterInput": {
+							"value": "@pipeline().parameters.HotStorageParameter[0]['DelimeterInput']",
+							"type": "Expression"
+						},
+						"Source_Location": {
+							"value": "@pipeline().parameters.Source_Location",
+							"type": "Expression"
+						},
+						"Compressed": {
+							"value": "@pipeline().parameters.Source_Details['Compressed']",
+							"type": "Expression"
+						},
+						"ProcessFilesLocation": {
+							"value": "@pipeline().parameters.InputFiles_processFiles_Location[0]['processlfilesLocation']",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"ManulFileDate": {
+				"type": "string",
+				"defaultValue": "None"
+			},
+			"WA_MS_RS": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"WAFirst_dependent": "Pipeline_LPL_Account_Ext|Pipeline_LPL_Position|Pipeline_LPL_Position_Security|Pipeline_LPL_Transaction_Activity_Extended",
+						"WASecond": "Pipeline_ORION_Assets",
+						"MorningFirst": "",
+						"MorningSecond": "",
+						"RiskAlyzeFirst": "",
+						"RiskalyzeSecond": ""
+					}
+				]
+			},
+			"Processing_Pipeline_name": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"Pipeline_name": "13LPL_Master_Pipeline_Automated",
+						"Processing_master_pipeline": "",
+						"ArrivalTime_Pipeline": ""
+					}
+				]
+			},
+			"HotStorageParameter": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"Source": "lpl",
+						"StorageAccountInput": "stmerit",
+						"FolderPathInput": "inbound/processfiles",
+						"FilesNameInput": "",
+						"DelimeterInput": "",
+						"HotStorageAccountOutput": "lpl",
+						"HotFolderPathOutput": "stmerit",
+						"FilesNameOutput": "DFM-18D8-",
+						"Outputdelimeter": "",
+						"PartialPath": "inbound/outboundzip/"
+					}
+				]
+			},
+			"InputFiles_processFiles_Location": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"Inputfileslocation": "inbound/inputfiles/",
+						"processlfilesLocation": "inbound/processfiles/",
+						"TempInputLocation": ""
+					}
+				]
+			},
+			"Source_location": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"Location": "SFTP",
+						"Host": "b2b-prd.lpl.com",
+						"Port": "10022",
+						"UserName": "18D8",
+						"SecretName": "lpl-sftp-password",
+						"Folder": ""
+					}
+				]
+			},
+			"WA_MS_RA_Flag": {
+				"type": "string",
+				"defaultValue": "TRUE|FALSE|FALSE"
+			},
+			"Source_Details": {
+				"type": "object",
+				"defaultValue": {
+					"Check_File": "13",
+					"Source": "lpl",
+					"FullFilesClient": "None",
+					"Compressed": "1",
+					"TriggerType": "Manual"
+				}
+			}
+		},
+		"variables": {
+			"FileStatus": {
+				"type": "String",
+				"defaultValue": "FAILS"
+			},
+			"Count": {
+				"type": "String",
+				"defaultValue": "0"
+			},
+			"ProcessCount": {
+				"type": "String"
+			},
+			"MaxRetry": {
+				"type": "String",
+				"defaultValue": "4"
+			},
+			"MasterPipelineId": {
+				"type": "String"
+			},
+			"PreEndTime": {
+				"type": "String"
+			},
+			"ProcEndTime": {
+				"type": "String"
+			},
+			"FileDate": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "shared/Generalized_Master_Pipeline"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-11-15T09:49:14Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
