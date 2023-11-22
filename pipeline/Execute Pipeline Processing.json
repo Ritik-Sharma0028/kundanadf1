@@ -1,0 +1,138 @@
+{
+	"name": "Execute Pipeline Processing",
+	"properties": {
+		"activities": [
+			{
+				"name": "Call Master Pipeline",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "https://management.azure.com/subscriptions/@{pipeline().globalParameters.subscription_id}/resourceGroups/@{pipeline().globalParameters.resource_group_name}/providers/Microsoft.DataFactory/factories/@{pipeline().globalParameters.data_factory_name}/pipelines/@{pipeline().parameters.pipeline_name}/createRun?api-version=2018-06-01",
+						"type": "Expression"
+					},
+					"method": "POST",
+					"headers": {
+						"Accept-Language": "en-us",
+						"Content-Type": "application/json"
+					},
+					"body": {
+						"value": "@concat('{\"MasterPipelineId\":\"', pipeline().parameters.MasterPipelineId,'\",\"MasterDate\":\"',pipeline().parameters.FileDate,'\",\"FullFileClient\":\"',pipeline().parameters.FullFileClient,'\"}')",
+						"type": "Expression"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.azure.com"
+					}
+				}
+			},
+			{
+				"name": "Until1",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "Call Master Pipeline",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or( greaterOrEquals(div(sub(ticks(utcNow()),ticks(pipeline().TriggerTime)),36000000000),1.5 ) , \n\tor(\n\t\tequals(activity('Call Master Pipeline  Status').output.status,'Succeeded' )\n\t\t,or(\n\t\t\tequals(activity('Call Master Pipeline  Status').output.status,'Failed' )\n\t\t\t,equals(activity('Call Master Pipeline  Status').output.status,'Canceled' )\n\t\t)\n\t)\n )",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Call Master Pipeline  Status",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": {
+									"value": "https://management.azure.com/subscriptions/@{pipeline().globalParameters.subscription_id}/resourceGroups/@{pipeline().globalParameters.resource_group_name}/providers/Microsoft.DataFactory/factories/@{pipeline().globalParameters.data_factory_name}/pipelineruns/@{activity('Call Master Pipeline').output.runId}?api-version=2018-06-01",
+									"type": "Expression"
+								},
+								"method": "GET",
+								"headers": {
+									"Accept-Language": "en-us",
+									"Content-Type": "application/json"
+								},
+								"body": {
+									"value": "{     \"lastUpdatedAfter\": \"@{utcnow('yyyy-MM-ddTHH:mm:ssZ')}\",     \"lastUpdatedBefore\": \"@{addDays(utcnow(), 1, 'yyyy-MM-ddTHH:mm:ssZ')}\" }",
+									"type": "Expression"
+								},
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://management.azure.com"
+								}
+							}
+						},
+						{
+							"name": "Wait1",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "Call Master Pipeline  Status",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 300
+							}
+						}
+					],
+					"timeout": "0.12:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"pipeline_name": {
+				"type": "String",
+				"defaultValue": "pipeline_test"
+			},
+			"MasterPipelineId": {
+				"type": "string"
+			},
+			"FileDate": {
+				"type": "string"
+			},
+			"FullFileClient": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"Status": {
+				"type": "String"
+			},
+			"ID": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "shared/Generalized_Master_Pipeline"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-25T05:36:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
