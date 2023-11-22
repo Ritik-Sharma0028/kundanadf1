@@ -1,0 +1,12 @@
+{
+	"name": "kundanadf10",
+	"properties": {
+		"globalParameters": {
+			"ADFName": {
+				"type": "string",
+				"value": "adf"
+			}
+		}
+	},
+	"location": "centralindia"
+}
